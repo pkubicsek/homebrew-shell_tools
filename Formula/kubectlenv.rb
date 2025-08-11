@@ -4,7 +4,7 @@ class Kubectlenv < Formula
   url "https://github.com/pkubicsek/homebrew-shell_tools/archive/v1.1.0.tar.gz"
   sha256 "cef7263c67988873baf8dfd85de353581dd3977f01fffa7654f54d78e105111f"
   license "MIT"
-    version "1.1.0"
+    version "1.1.1"
   head "https://github.com/pkubicsek/homebrew-shell_tools.git", branch: "master"
 
   depends_on "bash"

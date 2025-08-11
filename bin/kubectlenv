@@ -5,7 +5,7 @@ set -euo pipefail
 # kubectlenv - kubectl version manager
 # Similar functionality to tfenv but for kubectl
 
-KUBECTLENV_VERSION="1.1.0"
+KUBECTLENV_VERSION="1.1.1"
 KUBECTLENV_ROOT="${KUBECTLENV_ROOT:-$HOME/.kubectlenv}"
 KUBECTLENV_CONFIG_DIR="${KUBECTLENV_CONFIG_DIR:-$HOME/.config/kubectlenv}"
 
@@ -168,6 +168,7 @@ use_version() {
     
     echo "Switched to kubectl $version"
     echo "kubectl is now available at: $KUBECTLENV_ROOT/bin/kubectl"
+    echo "Run 'hash -r' or restart your shell to clear command cache if needed"
 }
 
 # Uninstall specific version

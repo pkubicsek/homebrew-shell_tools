@@ -1,8 +1,8 @@
 class Kubectlenv < Formula
   desc "kubectl version manager inspired by tfenv"
   homepage "https://github.com/pkubicsek/homebrew-shell_tools"
-  url "https://github.com/pkubicsek/homebrew-shell_tools/archive/v1.1.0.tar.gz"
-  sha256 "cef7263c67988873baf8dfd85de353581dd3977f01fffa7654f54d78e105111f"
+  url "https://github.com/pkubicsek/homebrew-shell_tools/archive/v1.1.1.tar.gz"
+  sha256 "dec5eb03bc6629926736e8afb193129c4601e56a47e62d8231116efc2185fc34"
   license "MIT"
     version "1.1.1"
   head "https://github.com/pkubicsek/homebrew-shell_tools.git", branch: "master"

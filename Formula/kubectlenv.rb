@@ -1,10 +1,10 @@
 class Kubectlenv < Formula
   desc "kubectl version manager inspired by tfenv"
-  homepage "https://github.com/pkubicsek/shell_tools"
-  url "git@github.com:pkubicsek/shell_tools.git", tag: "v1.0.0", revision: "8ed5062f138a7eb1dda01b6972655e3311393bd6"
+  homepage "https://github.com/pkubicsek/homebrew-shell_tools"
+  url "git@github.com:pkubicsek/homebrew-shell_tools.git", tag: "v1.0.0", revision: "8ed5062f138a7eb1dda01b6972655e3311393bd6"
   license "MIT"
   version "1.0.0"
-  head "git@github.com:pkubicsek/shell_tools.git", branch: "master"
+  head "git@github.com:pkubicsek/homebrew-shell_tools.git", branch: "master"
 
   depends_on "bash"
   depends_on "curl"

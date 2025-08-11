@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# kubectlenv - kubectl version manager
+# Similar functionality to tfenv but for kubectl
+
+KUBECTLENV_VERSION="1.0.0"
+KUBECTLENV_ROOT="${KUBECTLENV_ROOT:-$HOME/.kubectlenv}"
+KUBECTLENV_CONFIG_DIR="${KUBECTLENV_CONFIG_DIR:-$HOME/.config/kubectlenv}"
+
+# Create necessary directories
+mkdir -p "$KUBECTLENV_ROOT/versions"
+mkdir -p "$KUBECTLENV_CONFIG_DIR"
+
+# Detect OS and architecture
+detect_os_arch() {
+    local os arch
+    
+    case "$(uname -s)" in
+        Darwin*)
+            os="darwin"
+            ;;
+        Linux*)
+            os="linux"
+            ;;
+        CYGWIN*|MINGW*|MSYS*)
+            os="windows"
+            ;;
+        *)
+            echo "Error: Unsupported operating system: $(uname -s)" >&2
+            exit 1
+            ;;
+    esac
+    
+    case "$(uname -m)" in
+        x86_64|amd64)
+            arch="amd64"
+            ;;
+        arm64|aarch64)
+            arch="arm64"
+            ;;
+        armv7l)
+            arch="arm"
+            ;;
+        *)
+            echo "Error: Unsupported architecture: $(uname -m)" >&2
+            exit 1
+            ;;
+    esac
+    
+    echo "${os}_${arch}"
+}
+
+# Get kubectl download URL for specific version
+get_kubectl_url() {
+    local version="$1"
+    local platform="$2"
+    local os arch
+    
+    IFS='_' read -r os arch <<< "$platform"
+    
+    if [[ "$os" == "windows" ]]; then
+        echo "https://dl.k8s.io/release/v${version}/bin/windows/${arch}/kubectl.exe"
+    else
+        echo "https://dl.k8s.io/release/v${version}/bin/${os}/${arch}/kubectl"
+    fi
+}
+
+# List available kubectl versions from GitHub API
+list_remote_versions() {
+    echo "Fetching available kubectl versions..."
+    curl -s "https://api.github.com/repos/kubernetes/kubernetes/releases" | \
+        grep '"tag_name":' | \
+        sed -E 's/.*"v([^"]+)".*/\1/' | \
+        head -20
+}
+
+# List installed versions
+list_installed_versions() {
+    if [[ -d "$KUBECTLENV_ROOT/versions" ]]; then
+        find "$KUBECTLENV_ROOT/versions" -maxdepth 1 -type d -exec basename {} \; | \
+            grep -v "^versions$" | sort -V
+    fi
+}
+
+# Get current version
+get_current_version() {
+    if [[ -L "$KUBECTLENV_ROOT/kubectl" ]]; then
+        local target
+        target=$(readlink "$KUBECTLENV_ROOT/kubectl")
+        basename "$(dirname "$target")"
+    elif [[ -f "$KUBECTLENV_ROOT/.kubectl-version" ]]; then
+        cat "$KUBECTLENV_ROOT/.kubectl-version"
+    else
+        echo "No version set"
+    fi
+}
+
+# Install specific kubectl version
+install_version() {
+    local version="$1"
+    local platform
+    local url
+    local install_dir="$KUBECTLENV_ROOT/versions/$version"
+    
+    # Remove 'v' prefix if present
+    version="${version#v}"
+    
+    if [[ -d "$install_dir" ]]; then
+        echo "kubectl $version is already installed"
+        return 0
+    fi
+    
+    platform=$(detect_os_arch)
+    url=$(get_kubectl_url "$version" "$platform")
+    
+    echo "Installing kubectl $version for $platform..."
+    mkdir -p "$install_dir"
+    
+    # Download kubectl binary
+    if command -v curl >/dev/null; then
+        curl -fsSL "$url" -o "$install_dir/kubectl"
+    elif command -v wget >/dev/null; then
+        wget -q "$url" -O "$install_dir/kubectl"
+    else
+        echo "Error: curl or wget is required" >&2
+        exit 1
+    fi
+    
+    # Make executable
+    chmod +x "$install_dir/kubectl"
+    
+    # Verify installation
+    if "$install_dir/kubectl" version --client >/dev/null 2>&1; then
+        echo "kubectl $version installed successfully"
+    else
+        echo "Error: Failed to install kubectl $version" >&2
+        rm -rf "$install_dir"
+        exit 1
+    fi
+}
+
+# Use specific kubectl version
+use_version() {
+    local version="$1"
+    local install_dir="$KUBECTLENV_ROOT/versions/$version"
+    
+    # Remove 'v' prefix if present
+    version="${version#v}"
+    
+    if [[ ! -d "$install_dir" ]]; then
+        echo "kubectl $version is not installed. Run 'kubectlenv install $version' first."
+        exit 1
+    fi
+    
+    # Create symlink
+    rm -f "$KUBECTLENV_ROOT/kubectl"
+    ln -s "$install_dir/kubectl" "$KUBECTLENV_ROOT/kubectl"
+    
+    # Save current version
+    echo "$version" > "$KUBECTLENV_ROOT/.kubectl-version"
+    
+    echo "Switched to kubectl $version"
+}
+
+# Uninstall specific version
+uninstall_version() {
+    local version="$1"
+    local install_dir="$KUBECTLENV_ROOT/versions/$version"
+    
+    # Remove 'v' prefix if present
+    version="${version#v}"
+    
+    if [[ ! -d "$install_dir" ]]; then
+        echo "kubectl $version is not installed"
+        exit 1
+    fi
+    
+    # Check if it's the current version
+    local current_version
+    current_version=$(get_current_version)
+    if [[ "$current_version" == "$version" ]]; then
+        echo "Cannot uninstall currently active version ($version)"
+        echo "Switch to another version first with 'kubectlenv use <version>'"
+        exit 1
+    fi
+    
+    rm -rf "$install_dir"
+    echo "kubectl $version uninstalled"
+}
+
+# Show help
+show_help() {
+    cat << EOF
+kubectlenv $KUBECTLENV_VERSION - kubectl version manager
+
+Usage:
+  kubectlenv <command> [arguments]
+
+Commands:
+  install <version>    Install kubectl version
+  uninstall <version>  Uninstall kubectl version
+  use <version>        Switch to kubectl version
+  list                 List installed versions
+  list-remote          List available versions
+  current              Show current version
+  help                 Show this help
+
+Examples:
+  kubectlenv install 1.28.0
+  kubectlenv use 1.28.0
+  kubectlenv list
+  kubectlenv current
+
+Environment Variables:
+  KUBECTLENV_ROOT        Root directory (default: ~/.kubectlenv)
+  KUBECTLENV_CONFIG_DIR  Config directory (default: ~/.config/kubectlenv)
+
+Note: Add \$KUBECTLENV_ROOT to your PATH to use managed kubectl versions:
+  export PATH="\$KUBECTLENV_ROOT:\$PATH"
+EOF
+}
+
+# Main command dispatcher
+main() {
+    case "${1:-help}" in
+        install)
+            if [[ -z "${2:-}" ]]; then
+                echo "Error: Version required" >&2
+                echo "Usage: kubectlenv install <version>" >&2
+                exit 1
+            fi
+            install_version "$2"
+            ;;
+        uninstall)
+            if [[ -z "${2:-}" ]]; then
+                echo "Error: Version required" >&2
+                echo "Usage: kubectlenv uninstall <version>" >&2
+                exit 1
+            fi
+            uninstall_version "$2"
+            ;;
+        use)
+            if [[ -z "${2:-}" ]]; then
+                echo "Error: Version required" >&2
+                echo "Usage: kubectlenv use <version>" >&2
+                exit 1
+            fi
+            use_version "$2"
+            ;;
+        list)
+            echo "Installed versions:"
+            list_installed_versions
+            ;;
+        list-remote)
+            list_remote_versions
+            ;;
+        current)
+            echo "Current version: $(get_current_version)"
+            ;;
+        version|--version|-v)
+            echo "kubectlenv $KUBECTLENV_VERSION"
+            ;;
+        help|--help|-h|*)
+            show_help
+            ;;
+    esac
+}
+
+main "$@"

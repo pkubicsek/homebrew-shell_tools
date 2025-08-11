@@ -1,0 +1,36 @@
+#compdef kubectlenv
+
+_kubectlenv() {
+    local context curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    _arguments -C \
+        '1: :->command' \
+        '*::arg:->args'
+
+    case $state in
+        command)
+            _values 'kubectlenv commands' \
+                'install[Install kubectl version]' \
+                'uninstall[Uninstall kubectl version]' \
+                'use[Switch to kubectl version]' \
+                'list[List installed versions]' \
+                'list-remote[List available versions]' \
+                'current[Show current version]' \
+                'version[Show kubectlenv version]' \
+                'help[Show help]'
+            ;;
+        args)
+            case $line[1] in
+                install)
+                    _values 'available versions' $(kubectlenv list-remote 2>/dev/null | tail -n +2)
+                    ;;
+                uninstall|use)
+                    _values 'installed versions' $(kubectlenv list 2>/dev/null | tail -n +2)
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_kubectlenv "$@"

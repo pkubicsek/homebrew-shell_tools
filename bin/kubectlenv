@@ -5,12 +5,13 @@ set -euo pipefail
 # kubectlenv - kubectl version manager
 # Similar functionality to tfenv but for kubectl
 
-KUBECTLENV_VERSION="1.0.0"
+KUBECTLENV_VERSION="1.1.0"
 KUBECTLENV_ROOT="${KUBECTLENV_ROOT:-$HOME/.kubectlenv}"
 KUBECTLENV_CONFIG_DIR="${KUBECTLENV_CONFIG_DIR:-$HOME/.config/kubectlenv}"
 
 # Create necessary directories
 mkdir -p "$KUBECTLENV_ROOT/versions"
+mkdir -p "$KUBECTLENV_ROOT/bin"
 mkdir -p "$KUBECTLENV_CONFIG_DIR"
 
 # Detect OS and architecture
@@ -154,7 +155,11 @@ use_version() {
         exit 1
     fi
     
-    # Create symlink
+    # Create symlink in bin directory to override system kubectl
+    rm -f "$KUBECTLENV_ROOT/bin/kubectl"
+    ln -s "$install_dir/kubectl" "$KUBECTLENV_ROOT/bin/kubectl"
+    
+    # Also create symlink in root for backward compatibility
     rm -f "$KUBECTLENV_ROOT/kubectl"
     ln -s "$install_dir/kubectl" "$KUBECTLENV_ROOT/kubectl"
     
@@ -162,6 +167,7 @@ use_version() {
     echo "$version" > "$KUBECTLENV_ROOT/.kubectl-version"
     
     echo "Switched to kubectl $version"
+    echo "kubectl is now available at: $KUBECTLENV_ROOT/bin/kubectl"
 }
 
 # Uninstall specific version

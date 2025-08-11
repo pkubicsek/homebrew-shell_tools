@@ -4,7 +4,7 @@ class Kubectlenv < Formula
   url "https://github.com/pkubicsek/homebrew-shell_tools/archive/master.tar.gz"
   sha256 "572c2b2bf0fd725235cbfeedc02ed0fb77151aaaf2b8d0413c5524417c202083"
   license "MIT"
-  version "1.0.1"
+    version "1.1.0"
   head "https://github.com/pkubicsek/homebrew-shell_tools.git", branch: "master"
 
   depends_on "bash"
@@ -16,6 +16,9 @@ class Kubectlenv < Formula
     # Create kubectlenv root directory structure
     (var/"kubectlenv").mkpath
     (var/"kubectlenv/versions").mkpath
+    
+    # Create bin directory in kubectlenv root for kubectl symlink
+    (var/"kubectlenv/bin").mkpath
     
     # Install shell completion files if they exist
     if (buildpath/"completions").exist?
@@ -34,9 +37,11 @@ class Kubectlenv < Formula
     
     ohai "kubectlenv installed successfully!"
     ohai ""
-    ohai "To start using kubectlenv, add the following to your shell profile:"
+    ohai "To start using kubectlenv as primary kubectl manager:"
     ohai "  export KUBECTLENV_ROOT=#{kubectlenv_root}"
-    ohai "  export PATH=\"$KUBECTLENV_ROOT:$PATH\""
+    ohai "  export PATH=\"#{kubectlenv_root}/bin:$PATH\""
+    ohai ""
+    ohai "This will override any existing kubectl (including Docker's kubectl)"
     ohai ""
     ohai "Then reload your shell and run:"
     ohai "  kubectlenv install 1.28.0"
@@ -54,13 +59,16 @@ class Kubectlenv < Formula
     <<~EOS
       kubectlenv manages kubectl versions in #{var}/kubectlenv
 
-      To use kubectlenv-managed kubectl versions, add this to your shell profile:
+      To use kubectlenv-managed kubectl as PRIMARY kubectl (overriding Docker kubectl):
         export KUBECTLENV_ROOT=#{var}/kubectlenv
-        export PATH="$KUBECTLENV_ROOT:$PATH"
+        export PATH="$KUBECTLENV_ROOT/bin:$PATH"
 
       Then run:
         kubectlenv install <version>
         kubectlenv use <version>
+
+      This will make kubectlenv's kubectl the default, overriding any other kubectl
+      installations including Docker Desktop.
 
       Available commands:
         kubectlenv list          # List installed versions

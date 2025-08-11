@@ -1,8 +1,8 @@
 class Kubectlenv < Formula
   desc "kubectl version manager inspired by tfenv"
-  homepage "https://github.com/username/shell_tools"
-  url "https://github.com/username/shell_tools/archive/v1.0.0.tar.gz"
-  sha256 "PLACEHOLDER_SHA256"
+  homepage "https://github.com/pkubicsek/shell_tools"
+  url "https://github.com/pkubicsek/shell_tools/archive/v1.0.0.tar.gz"
+  sha256 "0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5"
   license "MIT"
   version "1.0.0"
 

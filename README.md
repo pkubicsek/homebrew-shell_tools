@@ -5,7 +5,7 @@ This is a Homebrew tap that provides various shell utilities and tools.
 ## Installation
 
 ```bash
-brew tap username/shell_tools
+brew tap pkubicsek/shell_tools
 ```
 
 ## Available Formulas
